@@ -2,6 +2,8 @@
 
 A static web app for exploring the Constitution of India. It has no build step and no backend.
 
+**Live site:** https://souravdeyirts.github.io/samvidhan/ (GitHub Pages, published from the `main` branch).
+
 ## Run
 
 ```bash

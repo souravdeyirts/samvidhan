@@ -1,0 +1,17 @@
+# editor / local tooling
+.claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# build inputs (large source documents, downloaded pages)
+*.pdf
+pages/

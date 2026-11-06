@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fffaf3">
+<title>Samvidhan Explorer — The Constitution of India</title>
+<meta name="description" content="Explore the Constitution of India: verbatim text, plain-language explanations, themes, amendment history, landmark judgments and an article graph.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/redesign.css">
+</head>
+<body>
+<header class="topbar" id="topbar">
+  <div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="topbar-row">
+    <a class="brand" href="#/" aria-label="Samvidhan Explorer — home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="currentColor"/><g stroke="currentColor" stroke-width="1"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></g></svg>
+      </span>
+      <span class="brand-text">Samvidhan <em>Explorer</em></span>
+    </a>
+    <div class="searchbox" id="searchbox">
+      <input id="q" type="search" placeholder="Search articles, cases, amendments…  ( / )" autocomplete="off" aria-label="Search">
+      <div id="qresults" class="qresults" hidden></div>
+    </div>
+    <div class="top-actions">
+      <button id="searchBtn" class="iconbtn search-btn" aria-label="Search" title="Search">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="theme-switch" role="radiogroup" aria-label="Colour theme">
+        <button data-t="tricolour" role="radio" title="Tricolour theme" aria-label="Tricolour theme"><span class="sw-flag"><i></i><i></i><i></i></span></button>
+        <button data-t="light" role="radio" title="Light theme" aria-label="Light theme">☀</button>
+        <button data-t="dark" role="radio" title="Dark theme" aria-label="Dark theme">☾</button>
+      </div>
+    </div>
+  </div>
+  <nav class="mainnav" id="mainnav" aria-label="Main">
+    <div class="nav-sec" role="group" aria-labelledby="ng-start"><span class="nav-sec-h" id="ng-start">Start</span><div class="nav-sec-items">
+      <a href="#/" data-nav="home">Home</a>
+    </div></div>
+    <div class="nav-sec" role="group" aria-labelledby="ng-learn"><span class="nav-sec-h" id="ng-learn">Learn</span><div class="nav-sec-items">
+      <a href="#/rights" data-nav="rights">Your rights</a>
+      <a href="#/learn" data-nav="learn">Journeys</a>
+      <a href="#/visuals" data-nav="visuals" title="Visual guides: diagrams of how institutions work">Visuals</a>
+    </div></div>
+    <div class="nav-sec" role="group" aria-labelledby="ng-read"><span class="nav-sec-h" id="ng-read">Read</span><div class="nav-sec-items">
+      <a href="#/parts" data-nav="parts">Parts</a>
+      <a href="#/schedules" data-nav="schedules">Schedules</a>
+      <a href="#/themes" data-nav="themes">Themes</a>
+    </div></div>
+    <div class="nav-sec" role="group" aria-labelledby="ng-history"><span class="nav-sec-h" id="ng-history">History</span><div class="nav-sec-items">
+      <a href="#/origins" data-nav="origins">Origins</a>
+      <a href="#/influences" data-nav="influences" title="How other constitutions influenced India's">Influences</a>
+      <a href="#/amendments" data-nav="amendments">Amendments</a>
+      <a href="#/cases" data-nav="cases">Judgments</a>
+    </div></div>
+    <div class="nav-sec" role="group" aria-labelledby="ng-explore"><span class="nav-sec-h" id="ng-explore">Explore</span><div class="nav-sec-items">
+      <a href="#/graph" data-nav="graph">Graph</a>
+      <a href="#/timemachine" data-nav="timemachine">Time machine</a>
+    </div></div>
+  </nav>
+</header>
+
+<main id="view" tabindex="-1"></main>
+
+<footer class="footer">
+  <p>Verbatim text: <em>The Constitution of India [As on 1st May, 2024]</em>, Legislative Department, Ministry of Law and Justice, Government of India (incorporating amendments up to the 106th Amendment Act, 2023). Earlier wording not recorded in the official footnotes is restored from a historical transcription (<a href="https://github.com/captn3m0/constitution" target="_blank" rel="noopener noreferrer">captn3m0/constitution</a>) and marked as such. Explanations, summaries and case notes are educational commentary, not legal advice. <strong>Draft v0.1</strong></p>
+</footer>
+
+<script src="vendor/d3.min.js"></script>
+<script src="data/constitution-text.js"></script>
+<script src="data/structure.js"></script>
+<script src="data/themes.js"></script>
+<script src="data/xrefs.js"></script>
+<script src="data/amendment-index.js"></script>
+<script src="data/amendments.js"></script>
+<script src="data/judgments.js"></script>
+<script src="data/updates.js"></script>
+<script src="data/journeys.js"></script>
+<script src="data/rights.js"></script>
+<script src="data/origins.js"></script>
+<script src="data/influences.js"></script>
+<script src="data/drafting.js"></script>
+<script src="data/explain-1.js"></script>
+<script src="data/explain-2.js"></script>
+<script src="data/explain-3.js"></script>
+<script src="data/explain-4.js"></script>
+<script src="data/explain-5.js"></script>
+<script src="data/history-fill.js"></script>
+<script src="js/timemachine.js"></script>
+<script src="js/visuals.js"></script>
+<script src="js/notes.js"></script>
+<script src="js/app.js"></script>
+<script src="js/graph.js"></script>
+</body>
+</html>

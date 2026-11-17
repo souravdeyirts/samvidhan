@@ -25,6 +25,7 @@ Then open http://localhost:8765. You need the local server because the data file
 | Per-article version history | article side panel | `data/amendment-index.js`, built from the footnotes |
 | Landmark judgments (68) | `#/cases`, `#/case/kesavananda-bharati` | `data/judgments.js` |
 | Article graph | `#/graph`, `#/graph?focus=356`, `#/graph?theme=emergency` | `data/xrefs.js` plus themes and cases |
+| Laws: 848 central Acts and 79 key-Act explainers | `#/laws`, `#/laws?art=3`, `#/law/rti-2005` | `data/laws.js` |
 
 ## Provenance
 
@@ -51,7 +52,7 @@ node tools/build_xref.js .
 
 ## Design
 
-- **Navigation:** always visible, never collapsed into a menu button. It sits under the header in four groups: Learn (Your rights, Journeys), Read (Parts, Schedules, Themes), History (Amendments, Judgments, Time machine) and Explore (Graph). On phones it is a swipeable strip that keeps the current section in view, and search opens as a full-width row from the search icon.
+- **Navigation:** always visible, never collapsed into a menu button. It sits under the header in labelled groups: Start (Home), Learn (Your rights, Journeys, Visuals), Read (Parts, Schedules, Themes, Laws), History (Origins, Influences, Amendments, Judgments) and Explore (Graph, Time machine). On phones it is a swipeable strip that keeps the current section in view, and search opens as a full-width row from the search icon.
 - **Themes:** **Tricolour** (the default: saffron, white, India green and Ashoka-chakra navy, with the saffron and green deepened for readable text), **Light** and **Dark**, chosen with the switch in the header. The choice is remembered per browser; first-time visitors whose device is set to dark mode get Dark.
 - **Index pages** (Home, Parts, Themes, Schedules, Your rights) use grouped one-line rows rather than card grids: two columns on wide screens, one on phones.
 - **Styles:** `css/style.css` holds the base styles and `css/redesign.css` holds the layout and phone rules.
@@ -125,6 +126,16 @@ Readers can select text in any "In plain language" card and highlight it (four c
 - **What India chose not to borrow.**
 - **Article pages:** the Origins card's "Influences" tags link to the matching source.
 - **Note:** the conventional "borrowed features" list is flagged as a teaching device, including where the attribution is too neat (for example, the 1935 Act already had a concurrent list).
+
+## Laws
+
+`#/laws` lists every central Act on India Code (848 in November 2026) and traces each one to the part of the Constitution that lets Parliament make it.
+
+- **Catalogue:** each Act has its year, Act number, ministry, long title, a subject (18 subject areas), and its constitutional basis: a Seventh Schedule entry (Union, State or Concurrent List) and/or a specific Article (for example Art. 3 for new States). Hovering an entry shows its official wording. Search and filter by subject, basis and period; every Act links to its official text on India Code. `#/laws?art=3` lists the Acts made directly under an Article, and Article pages link there.
+- **Basis is mostly inferred.** Acts rarely say which entry they rest on. The basis is marked **stated** only when the Act's own long title shows it (a public-interest declaration, a treaty, or States' resolutions under Art. 252); everything else is marked **inferred** from the subject, and about 37 Acts are marked "basis unclear". Treat it as a guide, not a legal opinion.
+- **79 key Acts explained** (`#/law/<id>`), in 13 groups from criminal justice to federalism: what the Act does, why it matters for the Constitution, key provisions, major changes up to 2026, court rulings, and links to Articles, judgments and rights scenarios. Article, judgment and rights pages link back to them. Fact-checked in November 2026; these change often (for example MGNREGA's replacement in July 2026 and the 2026 Tribunals Reforms Act).
+- **Not covered:** State Acts, rules, regulations and bylaws (there are many thousands); the page points to India Code and the Gazettes.
+- **Rebuild:** download the India Code search pages (the DSpace API, 100 Acts per page), then run `python -I tools/build_laws.py <work-dir> data/laws.js`. The script's docstring describes the inputs.
 
 ## Origins (Constituent Assembly)
 

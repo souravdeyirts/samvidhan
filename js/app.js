@@ -235,7 +235,8 @@
         { href: "#/preamble", icon: ICONS.preamble, color: "var(--navy)", title: "The Preamble", sub: "We, the people of India…" },
         { href: "#/parts", icon: ICONS.parts, color: "var(--navy)", title: "Parts & Articles", sub: `${PARTS.length} Parts, ${ARTS.length} Articles, verbatim with explanations` },
         { href: "#/schedules", icon: ICONS.schedules, color: "var(--navy)", title: "Schedules", sub: "The 12 Schedules, including the Union, State and Concurrent Lists" },
-        { href: "#/themes", icon: ICONS.themes, color: "var(--navy)", title: "Themes", sub: `${THEMES.length} cross-cutting themes, from federalism to free speech` } ] },
+        { href: "#/themes", icon: ICONS.themes, color: "var(--navy)", title: "Themes", sub: `${THEMES.length} cross-cutting themes, from federalism to free speech` },
+        ...(window.COI_LAWS ? [{ href: "#/laws", icon: "⚖", color: "var(--navy)", title: "Laws", sub: `All ${window.COI_LAWS.acts.length} central Acts, traced to the Constitution, with ${window.COI_LAWS.key.length} key Acts explained` }] : []) ] },
       { group: "History", rows: [
         { href: "#/amendments", icon: ICONS.amendments, color: "var(--accent)", title: "Amendments", sub: `All ${AMENDS.length} amendments since 1951 — what changed and why` },
         { href: "#/cases", icon: ICONS.cases, color: "var(--accent)", title: "Landmark judgments", sub: `${CASES.length} decisions that shaped what the text means` },
@@ -885,6 +886,7 @@
         <aside class="side">
           ${r.help.length ? `<div class="card"><h3>Helplines</h3>${helpStrip(r.help)}</div>` : ""}
           <div class="card"><h3>The Articles behind this</h3><div class="j-embeds" style="--jc:var(--accent);grid-template-columns:1fr;margin:0">${arts.map(a => embedHtml({ kind: "article", id: a })).join("")}</div></div>
+          ${lawListCard(keyOfRight.get(r.id), "Laws that help")}
           ${related.length ? `<div class="card"><h3>Related situations</h3><ul>${related.map(x => `<li><a href="#/rights/${x.id}">${esc(x.q)}</a></li>`).join("")}</ul></div>` : ""}
         </aside>
       </div>`, "rights");
@@ -1105,6 +1107,7 @@
           ${historyCard(a.id, hist, tmAvailable(a) ? a : null)}
           ${originsCard(a.id)}
           ${casesCard(cases)}
+          ${lawsCard(a.id)}
           ${(outRefs.length || inRefs.length) ? `<div class="card"><h3>Cross-references</h3>
             ${outRefs.length ? `<div class="small muted">This article refers to</div><div>${outRefs.map(x => `<a class="tag" href="#/article/${encodeURIComponent(x)}">${esc(x)}</a>`).join("")}</div>` : ""}
             ${inRefs.length ? `<div class="small muted" style="margin-top:8px">Referred to by</div><div>${inRefs.map(x => `<a class="tag" href="#/article/${encodeURIComponent(x)}">${esc(x)}</a>`).join("")}</div>` : ""}
@@ -1337,6 +1340,7 @@
         <aside class="side">
           ${(c.related || []).length ? `<div class="card"><h3>Related judgments</h3><ul>${c.related.map(r => caseById.get(r)).filter(Boolean).map(r => `<li><a href="#/case/${r.id}">${esc(r.short || r.name)}</a> <span class="small muted">(${r.year})</span></li>`).join("")}</ul></div>` : ""}
           ${(c.amendments || []).length ? `<div class="card"><h3>Related amendments</h3><ul>${c.amendments.map(n => `<li><a href="#/amendment/${n}">${ordinal(n)} Amendment</a>${amendByN.get(n) ? ` <span class="small muted">— ${esc(amendByN.get(n).title)}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+          ${lawListCard(keyOfCase.get(c.id), "Laws in this case")}
           ${sourcesCard(c)}
           <div class="card"><h3>In the graph</h3><a href="#/graph?case=${c.id}">Show this case's articles in the graph →</a></div>
         </aside>
@@ -1349,6 +1353,205 @@
     const host = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } };
     return `<div class="card"><h3>Sources</h3>${o.checked ? `<div class="checked-badge">✓ Fact-checked ${esc(o.checked)}</div>` : ""}
       ${urls.length ? `<ul>${urls.map(u => `<li><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(host(u))}</a></li>`).join("")}</ul>` : ""}</div>`;
+  }
+
+  // ------------------------------------------------------------ laws (data/laws.js)
+  const LAWS = window.COI_LAWS || null;
+  const LACTS = LAWS ? LAWS.acts : [];
+  const LKEY = LAWS ? LAWS.key : [];
+  const lawById = new Map(LKEY.map(k => [k.id, k]));
+  const LSUBJ = new Map(LAWS ? LAWS.subjects : []);
+  const LIST_NAME = { I: "Union List", II: "State List", III: "Concurrent List" };
+  const keyOfArticle = new Map(), keyOfCase = new Map(), keyOfRight = new Map();
+  const pushM = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+  LKEY.forEach(k => {
+    (k.articles || []).forEach(a => pushM(keyOfArticle, a, k));
+    (k.cases || []).forEach(c => pushM(keyOfCase, c, k));
+    (k.scenarios || []).forEach(s => pushM(keyOfRight, s, k));
+  });
+  keyOfRight.forEach((ks, id) => ks.sort((a, b) => a.scenarios.indexOf(id) - b.scenarios.indexOf(id)));
+  keyOfCase.forEach((ks, id) => ks.sort((a, b) => a.cases.indexOf(id) - b.cases.indexOf(id)));
+  const actsOfArticle = new Map();
+  LACTS.forEach(x => (x.a || []).forEach(a => pushM(actsOfArticle, a, x)));
+  const indiaCode = u => "https://indiacode.gov.in/items/" + u;
+  // Seventh Schedule entries, parsed from the official text: SEV.I["97"] = "Any other matter…"
+  let SEV = null;
+  function sevEntries() {
+    if (SEV) return SEV;
+    SEV = { I: {}, II: {}, III: {} };
+    const sch = T.schedules.find(s => s.id === "Seventh");
+    if (!sch) return SEV;
+    const parts = String(sch.text).split(/List (I{1,3})--\w+ List/);
+    for (let i = 1; i < parts.length; i += 2) {
+      const body = parts[i + 1].replace(/⟦\d+⟧/g, "");
+      const re = /(?:^|\n)\s*\[?(\d{1,3}[A-Z]?)\.\s+([\s\S]*?)(?=\n\s*\[?\d{1,3}[A-Z]?\.\s|$)/g;
+      let m;
+      while ((m = re.exec(body))) SEV[parts[i]][m[1]] = m[2].replace(/\s+/g, " ").replace(/\]\s*$/, "").trim();
+    }
+    return SEV;
+  }
+  // chips for a constitutional basis {l, e:[], a:[], how}
+  function basisChips(b, opts) {
+    const out = [];
+    if (b.l && LIST_NAME[b.l]) {
+      const es = b.e || [];
+      const S = sevEntries()[b.l] || {};
+      const nm = opts && opts.short ? "List " + b.l : LIST_NAME[b.l];
+      if (es.length) es.forEach(e => out.push(`<a class="tag lb lb-${b.l}" href="#/schedule/Seventh" title="${esc(LIST_NAME[b.l] + ", entry " + e + ": " + (S[e] || ""))}">${nm} · ${esc(e)}</a>`));
+      else out.push(`<span class="tag lb lb-${b.l}">${LIST_NAME[b.l]}</span>`);
+    }
+    (b.a || []).forEach(a => out.push(`<a class="tag lb lb-art" href="#/article/${encodeURIComponent(a)}" title="${esc(byId.has(a) ? byId.get(a).title : "")}">Art. ${esc(a)}</a>`));
+    if (!out.length) return `<span class="tag lb lb-unk" title="We could not identify the source of power with confidence">Basis unclear</span>`;
+    return out.join("") + (b.how === "stated"
+      ? `<span class="lb-st" title="The Act itself states this basis">stated</span>`
+      : `<span class="lb-inf" title="Our inference from the Act's subject; the Act does not state it">inferred</span>`);
+  }
+  function lawRow(x) {
+    const k = x.k ? lawById.get(x.k) : null;
+    const name = k ? `<a href="#/law/${k.id}">${esc(x.t)}</a>` : `<a href="${indiaCode(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>`;
+    return `<div class="law-row${k ? " key" : ""}">
+      <span class="law-y">${esc(x.y)}</span>
+      <div class="law-main"><div class="law-t">${name}${k ? ` <span class="law-star" title="Has a full explainer page">★ explained</span>` : ""}</div>
+        <div class="law-m">Act ${esc(x.n)} of ${esc(x.y)} · ${esc(LAWS.ministries[x.m] || "")}${+x.y < 1950 ? ` · <span title="Laws in force before 26 January 1950 continue under Article 372 until repealed or amended">pre-Constitution law</span>` : ""}</div>
+        ${x.lt ? `<div class="law-lt">${esc(x.lt)}</div>` : ""}
+        <div class="law-b"><span class="tag law-subj">${esc(LSUBJ.get(x.s) || x.s)}</span>${basisChips(x, { short: true })}${x.nt ? `<span class="law-nt">${esc(x.nt)}</span>` : ""}</div></div>
+      <a class="law-ext" href="${indiaCode(x.u)}" target="_blank" rel="noopener noreferrer" title="Official text on India Code" aria-label="Official text of ${esc(x.t)} on India Code">↗</a></div>`;
+  }
+  const lawState = { q: "", s: "", l: "", era: "", art: "", n: 60 };
+  function basisKind(x) {
+    if (x.l === "I" || x.l === "II" || x.l === "III") return x.l;
+    return (x.a || []).length ? "art" : "unk";
+  }
+  function viewLaws(params) {
+    if (!LAWS) return notFound();
+    lawState.art = params && params.get("art") || "";
+    lawState.n = 60;
+    const kinds = { I: 0, III: 0, II: 0, art: 0, unk: 0 };
+    LACTS.forEach(x => kinds[basisKind(x)]++);
+    const pre = LACTS.filter(x => +x.y < 1950).length;
+    const stated = LACTS.filter(x => x.how === "stated").length;
+    const used = [...LSUBJ.keys()].filter(s => LACTS.some(x => x.s === s));
+    render(`
+      <div class="crumbs"><a href="#/">Home</a><span class="sep">/</span>Laws</div>
+      <h1>Laws made under the Constitution</h1>
+      <p class="lede">The Constitution sets up the framework; Parliament's Acts fill it in. Here are all <b>${LACTS.length}</b> central Acts currently on India Code, each traced to the part of the Constitution that lets Parliament make it, with fuller explainers for <b>${LKEY.length}</b> key Acts.</p>
+
+      <div class="law-how card">
+        <h2>Where Parliament's power comes from</h2>
+        <p><a href="#/article/245">Article 245</a> lets Parliament make laws for India, and <a href="#/article/246">Article 246</a> divides subjects into three lists in the <a href="#/schedule/Seventh">Seventh Schedule</a>. Some Acts rest instead on a specific Article, such as creating new States (<a href="#/article/3">Art. 3</a>) or citizenship (<a href="#/article/11">Art. 11</a>).</p>
+        <div class="law-kinds">
+          <button class="lk lk-I" data-l="I"><b>${kinds.I}</b><span>Union List</span><small>Only Parliament: defence, foreign affairs, banking, railways, and anything not listed elsewhere.</small></button>
+          <button class="lk lk-III" data-l="III"><b>${kinds.III}</b><span>Concurrent List</span><small>Both Parliament and the States; the central law prevails if they clash.</small></button>
+          <button class="lk lk-II" data-l="II"><b>${kinds.II}</b><span>State subjects</span><small>Normally for States. Parliament acts only by a special route (States' consent, a treaty, Union territories); older laws from before 1950 on these subjects also continue.</small></button>
+          <button class="lk lk-art" data-l="art"><b>${kinds.art}</b><span>A specific Article</span><small>Made directly under an Article, such as new States, citizenship or the Finance Commission.</small></button>
+        </div>
+        <p class="small muted" style="margin:10px 0 0">${pre} of these Acts were made before 26 January 1950 and continue in force under <a href="#/article/372">Article 372</a>. Only ${stated} Acts state their own constitutional basis; for the rest it is <span class="lb-inf">inferred</span> from the subject, so treat it as a guide, not a legal opinion.${kinds.unk ? ` For ${kinds.unk} the basis is unclear.` : ""}</p>
+      </div>
+
+      <h2 class="og-h">Key Acts, explained</h2>
+      <div class="law-groups">${(LAWS.groups || []).map(([g, ids]) => {
+        const ks = ids.map(i => lawById.get(i)).filter(Boolean);
+        return ks.length ? `<section class="law-group card"><h3>${esc(g)}</h3><ul>${ks.map(k => `<li><a href="#/law/${k.id}">${esc(k.short)}</a> <span class="muted small">${k.year}</span></li>`).join("")}</ul></section>` : "";
+      }).join("")}</div>
+
+      <h2 class="og-h" id="catalogue">All central Acts</h2>
+      <div class="toolbar law-tools">
+        <input type="search" id="lq" placeholder="Search ${LACTS.length} Acts by name or purpose…" value="${esc(lawState.q)}" aria-label="Search Acts">
+        <select id="ls" aria-label="Subject"><option value="">All subjects</option>${used.map(s => `<option value="${s}" ${lawState.s === s ? "selected" : ""}>${esc(LSUBJ.get(s))}</option>`).join("")}</select>
+        <select id="ll" aria-label="Constitutional basis"><option value="">Any basis</option>${[["I", "Union List"], ["III", "Concurrent List"], ["II", "State subject (special route)"], ["art", "A specific Article"], ["unk", "Basis unclear"]].map(([v, l]) => `<option value="${v}" ${lawState.l === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <select id="le" aria-label="Period"><option value="">Any year</option>${[["pre", "Before 1950"], ["1950", "1950–1979"], ["1980", "1980–1999"], ["2000", "2000–2019"], ["2020", "2020 onwards"]].map(([v, l]) => `<option value="${v}" ${lawState.era === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+      </div>
+      <div id="lart"></div>
+      <div class="small muted" id="lcount" aria-live="polite"></div>
+      <div class="law-list" id="llist"></div>
+      <div id="lmore"></div>
+
+      <h2 class="og-h">State laws, rules and bylaws</h2>
+      <p style="max-width:75ch">Each State, and the Union territories with legislatures, make their own laws on State List and Concurrent List subjects: police, land, local government, agriculture, public health and more. Under all these Acts, governments and local bodies also make rules, regulations and municipal bylaws, many thousands in all. Official texts are on <a href="https://indiacode.gov.in" target="_blank" rel="noopener noreferrer">India Code</a>, which has central and State collections and over 15,000 central rules and regulations, and in the official Gazettes. This guide covers central Acts only.</p>
+      <p class="small muted" style="margin-top:12px">Catalogue: ${esc(LAWS.source)}, retrieved ${esc(LAWS.updated)}. Subjects and constitutional basis were mapped for this app${LAWS.checked ? "; key Act pages were fact-checked in " + esc(LAWS.checked) : ""}. Not legal advice.</p>`, "laws");
+
+    const inEra = x => { const y = +x.y; switch (lawState.era) { case "pre": return y < 1950; case "1950": return y >= 1950 && y < 1980; case "1980": return y >= 1980 && y < 2000; case "2000": return y >= 2000 && y < 2020; case "2020": return y >= 2020; default: return true; } };
+    const draw = () => {
+      const words = lawState.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const list = LACTS.filter(x => (!lawState.s || x.s === lawState.s) && (!lawState.l || basisKind(x) === lawState.l) && inEra(x) &&
+        (!lawState.art || (x.a || []).includes(lawState.art)) &&
+        (!words.length || words.every(w => x._q.includes(w))))
+        .sort((a, b) => (b.k ? 1 : 0) - (a.k ? 1 : 0) || (+b.y - +a.y) || a.t.localeCompare(b.t));
+      $("#lart").innerHTML = lawState.art ? `<div class="notice">Showing Acts made directly under <a href="#/article/${encodeURIComponent(lawState.art)}">Article ${esc(lawState.art)}</a>. <a href="#/laws">Show all Acts</a></div>` : "";
+      $("#lcount").textContent = `${list.length} Act${list.length === 1 ? "" : "s"}${list.length > lawState.n ? `, showing ${lawState.n}` : ""} · explained Acts first, then newest first`;
+      $("#llist").innerHTML = list.slice(0, lawState.n).map(lawRow).join("") || `<div class="empty">No Acts match.</div>`;
+      $("#lmore").innerHTML = list.length > lawState.n ? `<button class="btn" id="lmoreb">Show ${Math.min(100, list.length - lawState.n)} more</button>` : "";
+      const mb = $("#lmoreb"); if (mb) mb.addEventListener("click", () => { lawState.n += 100; draw(); });
+    };
+    const reset = () => { lawState.n = 60; draw(); };
+    $("#lq").addEventListener("input", e => { lawState.q = e.target.value; reset(); });
+    $("#ls").addEventListener("change", e => { lawState.s = e.target.value; reset(); });
+    $("#ll").addEventListener("change", e => { lawState.l = e.target.value; reset(); });
+    $("#le").addEventListener("change", e => { lawState.era = e.target.value; reset(); });
+    view.querySelectorAll(".lk").forEach(bt => bt.addEventListener("click", () => {
+      lawState.l = lawState.l === bt.dataset.l ? "" : bt.dataset.l;
+      $("#ll").value = lawState.l; reset();
+      $("#catalogue").scrollIntoView({ behavior: "smooth" });
+    }));
+    draw();
+    if (lawState.art) $("#catalogue").scrollIntoView();
+  }
+  LACTS.forEach(x => { x._q = (x.t + " " + (x.lt || "") + " " + (x.k && lawById.get(x.k) ? lawById.get(x.k).short : "") + " " + x.y).toLowerCase(); });
+
+  function viewLaw(id) {
+    const k = lawById.get(id);
+    if (!k) return notFound();
+    const x = k.u ? LACTS.find(a => a.u === k.u) : null;
+    const b = k.basis || {};
+    const S = sevEntries();
+    const entryText = b.l && S[b.l] ? (b.e || []).filter(e => S[b.l][e]).map(e => `<li><b>${LIST_NAME[b.l]}, entry ${esc(e)}:</b> ${esc(S[b.l][e])}</li>`).join("") : "";
+    const i = LKEY.indexOf(k);
+    const prev = LKEY[i - 1], next = LKEY[i + 1];
+    const group = (LAWS.groups || []).find(g => g[1].includes(k.id));
+    render(`
+      <div class="crumbs"><a href="#/">Home</a><span class="sep">/</span><a href="#/laws">Laws</a><span class="sep">/</span>${esc(k.short)}</div>
+      ${group ? `<div class="rc-k" style="margin-bottom:4px">${esc(group[0])}</div>` : ""}
+      <h1>${esc(k.title)}</h1>
+      <div class="article-layout">
+        <div class="prose">
+          <dl class="kv card" style="box-shadow:none">
+            <dt>Act</dt><dd>No. ${esc(k.no)} of ${k.year}${x ? ` · ${esc(LAWS.ministries[x.m] || "")}` : ""}</dd>
+            <dt>Status</dt><dd>${esc(k.status)}</dd>
+            <dt>Constitutional basis</dt><dd>${basisChips(b)}</dd>
+          </dl>
+          ${plainCard("law:" + k.id, [{ cls: "s", t: k.summary }])}
+          <h2>Why it matters for the Constitution</h2><p>${esc(k.why)}</p>
+          ${b.text || entryText ? `<div class="law-basis">${b.text ? `<p>${esc(b.text)}</p>` : ""}${entryText ? `<ul>${entryText}</ul>` : ""}</div>` : ""}
+          <h2>What the Act does</h2><ul class="law-points">${(k.points || []).map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+          ${(k.history || []).length ? `<h2>How it has changed</h2><ol class="og-timeline">${k.history.map(h => `<li><time>${esc(h.year)}</time><div><p>${esc(h.text)}</p></div></li>`).join("")}</ol>` : ""}
+          ${((k.cases || []).length || (k.otherCases || []).length) ? `<h2>In the courts</h2>
+            ${(k.cases || []).length ? `<div class="j-embeds" style="--jc:var(--navy);margin-top:8px">${k.cases.filter(c => caseById.has(c)).map(c => embedHtml({ kind: "case", id: c })).join("")}</div>` : ""}
+            ${(k.otherCases || []).length ? `<ul class="law-oc">${k.otherCases.map(c => `<li><b>${esc(c.name)}</b> (${esc(c.year)}): ${esc(c.note)}</li>`).join("")}</ul>` : ""}` : ""}
+          <div class="notice" style="margin-top:22px">This is a plain-language summary, not the law itself, and not legal advice.${k.u ? ` Read the <a href="${indiaCode(k.u)}" target="_blank" rel="noopener noreferrer">official text on India Code</a>.` : ""}</div>
+          <div class="prevnext">
+            ${prev ? `<a href="#/law/${prev.id}">← ${esc(prev.short)}</a>` : "<span></span>"}
+            ${next ? `<a class="next" href="#/law/${next.id}">${esc(next.short)} →</a>` : "<span></span>"}
+          </div>
+        </div>
+        <aside class="side">
+          ${k.u ? `<div class="card"><h3>Official text</h3><a href="${indiaCode(k.u)}" target="_blank" rel="noopener noreferrer">Read the Act on India Code ↗</a></div>` : ""}
+          ${(k.articles || []).length ? `<div class="card"><h3>The Articles behind this</h3><div class="j-embeds" style="--jc:var(--accent);grid-template-columns:1fr;margin:0">${k.articles.filter(a => byId.has(a)).map(a => embedHtml({ kind: "article", id: a })).join("")}</div></div>` : ""}
+          ${(k.scenarios || []).length ? `<div class="card"><h3>Know your rights</h3><ul>${k.scenarios.map(s => rightById.get(s)).filter(Boolean).map(r => `<li><a href="#/rights/${r.id}">${esc(r.q)}</a></li>`).join("")}</ul></div>` : ""}
+          ${(k.themes || []).length ? `<div class="card"><h3>Themes</h3>${k.themes.filter(t => themeById.has(t)).map(t => `<a class="tag" href="#/theme/${t}">${esc(themeById.get(t).name)}</a>`).join("")}</div>` : ""}
+          ${sourcesCard({ sources: (k.sources || []).map(s => s.u), checked: k.checked || LAWS.checked })}
+        </aside>
+      </div>`, "laws");
+  }
+  // side cards on Article, judgment and rights pages
+  function lawsCard(id) {
+    // Acts that name this Article first are most directly about it
+    const ks = (keyOfArticle.get(id) || []).slice().sort((a, b) => a.articles.indexOf(id) - b.articles.indexOf(id)), n = (actsOfArticle.get(id) || []).length;
+    if (!ks.length && !n) return "";
+    return `<div class="card"><h3>Laws that carry this out</h3>${ks.length ? `<ul>${ks.slice(0, 6).map(k => `<li><a href="#/law/${k.id}">${esc(k.short)}</a> <span class="small muted">(${k.year})</span></li>`).join("")}</ul>${ks.length > 6 ? `<details class="small"><summary>${ks.length - 6} more explained Acts</summary><ul>${ks.slice(6).map(k => `<li><a href="#/law/${k.id}">${esc(k.short)}</a></li>`).join("")}</ul></details>` : ""}` : ""}
+      ${n ? `<a class="small" href="#/laws?art=${encodeURIComponent(id)}">${n} central Act${n === 1 ? "" : "s"} made directly under Art. ${esc(id)} →</a>` : ""}</div>`;
+  }
+  function lawListCard(ks, title) {
+    return ks && ks.length ? `<div class="card"><h3>${title}</h3><ul>${ks.slice(0, 8).map(k => `<li><a href="#/law/${k.id}">${esc(k.short)}</a> <span class="small muted">(${k.year})</span></li>`).join("")}</ul></div>` : "";
   }
 
   function notFound() {
@@ -1368,6 +1571,8 @@
   AMENDS.forEach(a => SEARCH.push({ type: ordinal(a.n) + " Amendment · " + a.year, title: a.title, sub: a.summary, href: "#/amendment/" + a.n, ttl: a.title.toLowerCase(), text: (a.summary + " " + (a.why || "")).toLowerCase() }));
   CASES.forEach(c => SEARCH.push({ type: "Judgment · " + c.year, title: c.name, sub: c.held, href: "#/case/" + c.id, ttl: (c.name + " " + (c.short || "")).toLowerCase(), text: (c.question + " " + c.held + " " + c.impact).toLowerCase() }));
   (window.COI_RIGHTS || []).forEach(r => SEARCH.push({ type: "Know your rights", title: r.q, sub: r.short, href: "#/rights/" + r.id, ttl: (r.q + " " + r.tags.join(" ")).toLowerCase(), text: (r.short + " " + r.steps.join(" ")).toLowerCase() }));
+  LKEY.forEach(k => SEARCH.push({ type: "Law · " + k.year, title: k.title, sub: k.summary, href: "#/law/" + k.id, ttl: (k.title + " " + k.short).toLowerCase(), text: (k.summary + " " + k.why + " " + (k.points || []).join(" ")).toLowerCase() }));
+  LACTS.forEach(x => { if (!x.k) SEARCH.push({ type: "Central Act · " + x.y, title: x.t, sub: x.lt || "", href: "#/laws", ext: indiaCode(x.u), ttl: x.t.toLowerCase(), text: (x.lt || "").toLowerCase(), low: true }); });
   T.schedules.forEach(s => SEARCH.push({ type: "Schedule", title: s.id + " Schedule — " + ((SCHMETA[s.id] || {}).title || ""), sub: (SCHMETA[s.id] || {}).about, href: "#/schedule/" + s.id, ttl: (s.id + " schedule " + ((SCHMETA[s.id] || {}).title || "")).toLowerCase(), text: "" }));
 
   function search(q) {
@@ -1390,6 +1595,7 @@
         else { score = 0; break; }
       }
       if (score && s.omitted) score -= 3;
+      if (score && s.low) score -= 4;
       if (score > 0) res.push(Object.assign({ score }, s));
     });
     return res.sort((a, b) => b.score - a.score).slice(0, 25);
@@ -1402,7 +1608,7 @@
     qsel = -1;
     if (!qin.value.trim()) { qres.hidden = true; return; }
     qres.hidden = false;
-    qres.innerHTML = r.length ? r.map(s => `<a href="${s.href}"><span class="qt">${esc(s.type)}</span><br><b>${esc(s.title)}</b><span class="qs">${esc(s.sub || "")}</span></a>`).join("") : `<div class="empty small">No results</div>`;
+    qres.innerHTML = r.length ? r.map(s => `<a href="${s.ext || s.href}"${s.ext ? ' target="_blank" rel="noopener noreferrer"' : ""}><span class="qt">${esc(s.type)}</span><br><b>${esc(s.title)}</b><span class="qs">${esc(s.sub || "")}</span></a>`).join("") : `<div class="empty small">No results</div>`;
   }
   qin.addEventListener("input", drawSearch);
   qin.addEventListener("focus", drawSearch);
@@ -1410,7 +1616,7 @@
     const items = [...qres.querySelectorAll("a")];
     if (e.key === "ArrowDown") { qsel = Math.min(items.length - 1, qsel + 1); e.preventDefault(); }
     else if (e.key === "ArrowUp") { qsel = Math.max(0, qsel - 1); e.preventDefault(); }
-    else if (e.key === "Enter") { const t = items[Math.max(0, qsel)]; if (t) { location.hash = t.getAttribute("href"); qres.hidden = true; qin.blur(); } return; }
+    else if (e.key === "Enter") { const t = items[Math.max(0, qsel)]; if (t) { if (t.target === "_blank") window.open(t.href, "_blank", "noopener"); else location.hash = t.getAttribute("href"); qres.hidden = true; qin.blur(); } return; }
     else if (e.key === "Escape") { qres.hidden = true; qin.blur(); return; }
     items.forEach((x, i) => x.classList.toggle("sel", i === qsel));
     if (items[qsel]) items[qsel].scrollIntoView({ block: "nearest" });
@@ -1482,6 +1688,8 @@
       case "origins": return viewOrigins();
       case "influences": return viewInfluences(params);
       case "visuals": return viewVisuals();
+      case "laws": return viewLaws(params);
+      case "law": return viewLaw(seg[1]);
       case "visual": return viewVisual(seg[1]);
       case "graph":
         render(`<div id="graphRoot"></div>`, "graph");

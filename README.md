@@ -158,6 +158,12 @@ Readers can select text in any "In plain language" card and highlight it (four c
   - **Rebuild:** download the Article pages (politely, about one request a second), then run `python -I tools/build_drafting.py <pages-dir> <url-list> data/drafting.js`.
   - **Limits:** dates are read from the site's prose. Where an adoption date falls before a later debate on the same Article (because the provision was revisited), the adoption date is left out. Articles inserted by later amendments have no Assembly history.
 
+## Sharing
+
+- **Link previews:** `index.html` has Open Graph tags, so a shared link shows the title, a description and `og-image.png` (1200×630).
+- **Site icon:** `favicon.ico`, `favicon.svg`, `icon-180.png` (phone home screens) and `icon-512.png`, with `site.webmanifest`. The icon uses the site's own wheel mark rather than the national flag. Redraw the icon and preview card with `python -I tools/make_icons.py .` (it uses Windows fonts).
+- **Reporting errors:** every content page ends with "Spotted a mistake on this page? Report it", which opens a GitHub issue pre-filled with the page's name and address.
+
 ## Known gaps (draft)
 
 - Arts. 168, 310 and 342 each still show a stray footnote number ("1[2[", "42***", "45***"). In the PDF the matching footnote is printed on a different page from its marker.

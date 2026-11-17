@@ -87,8 +87,24 @@
   function plainCard(key, blocks) {
     return `<div class="plain" data-nk="${esc(key)}"><div class="label"><span>In plain language</span></div>${blocks.filter(b => b.t).map(b => `<div class="nb${b.cls ? " " + b.cls : ""}">${esc(b.t)}</div>`).join("")}</div>`;
   }
+  // "Report an error" opens a pre-filled GitHub issue for the page being read
+  const REPORT_URL = "https://github.com/souravdeyirts/samvidhan/issues/new";
+  function reportLink() {
+    const h = $("h1", view), am = location.hash.match(/^#\/article\/([^?]+)/);
+    const title = (am ? "Art. " + decodeURIComponent(am[1]) + " — " : "") + (h ? h.textContent.trim().replace(/\s+/g, " ") : document.title);
+    const body = `Page: ${location.href}
+
+What's wrong:
+
+
+What it should say (and a source, if you have one):
+`;
+    const u = `${REPORT_URL}?title=${encodeURIComponent("Error on: " + title.slice(0, 90))}&body=${encodeURIComponent(body)}`;
+    return `<p class="report-err small"><a href="${u}" target="_blank" rel="noopener noreferrer">Spotted a mistake on this page? Report it</a> <span class="muted">(opens GitHub; a free account is needed)</span></p>`;
+  }
   function render(html, nav) {
     view.innerHTML = html;
+    if (nav && nav !== "home" && nav !== "graph") view.insertAdjacentHTML("beforeend", reportLink());
     if (window.COI_NOTES) window.COI_NOTES.mount(view);
     setActiveNav(nav);
     window.scrollTo(0, 0);

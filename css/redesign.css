@@ -441,3 +441,6 @@ a.hl.on { background: color-mix(in srgb, var(--accent) 22%, transparent); outlin
   .law-row { grid-template-columns: 1fr 30px; }
   .law-y { display: none; }
 }
+
+/* report-an-error link at the foot of content pages */
+.report-err { margin: 36px 0 0; padding-top: 14px; border-top: 1px dashed var(--line); }
